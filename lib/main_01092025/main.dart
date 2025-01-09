@@ -4,6 +4,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'dart:async';
+import 'package:tflite_flutter_helper/tflite_flutter_helper.dart';
 import 'package:image/image.dart' as img; // 画像処理用のパッケージ
 
 void main() {
@@ -50,12 +53,20 @@ class _ImagePredictionScreenState extends State<ImagePredictionScreen> {
     if (pickedFile != null) {
       File file = File(pickedFile.path);
 
+      // 圧縮が必要なら行う
+      final compressedFile = await FlutterImageCompress.compressAndGetFile(
+        file.absolute.path,
+        '${file.absolute.path}_compressed.jpg',
+        quality: 85,
+      );
+
       setState(() {
-        _selectedImage = file;
+        _selectedImage = compressedFile as File? ?? file;
       });
 
       _runModel();
     }
+
   }
 
   Future<void> _runModel() async {
@@ -63,51 +74,24 @@ class _ImagePredictionScreenState extends State<ImagePredictionScreen> {
       return;
     }
 
-    // 画像をロードしてリサイズ
+    // 画像をロードしてTensorに変換
     Uint8List input = await _selectedImage!.readAsBytes();
     img.Image image = img.decodeImage(input)!;
-    img.Image resizedImage = img.copyResize(image, width: 224, height: 224); // モデルの入力サイズに合わせてリサイズ
 
-    // 画像を1次元Float32Listに変換
-    Float32List inputBuffer = _imageToFloat32List(resizedImage);
+    // 画像をリサイズしてTensorImageに変換
+    img.Image resizedImage = img.copyResize(image, width: 224, height: 224); // モデルの入力サイズに合わせてリサイズ
+    TensorImage tensorImage = TensorImage.fromImage(resizedImage);
 
     // 結果を格納するためのリストを用意
-    var outputBuffer = List.filled(_interpreter.getOutputTensor(0).shape[1], 0.0).reshape([1]);
+    var output = List.filled(_interpreter.getOutputTensor(0).shape[1], 0).reshape([1]);
 
     // 推論実行
-    _interpreter.run(inputBuffer, outputBuffer);
+    _interpreter.run(tensorImage.buffer, output);
 
     setState(() {
-      _predictionResult = outputBuffer.toString();
+      _predictionResult = output.toString();
     });
   }
-
-  Float32List _imageToFloat32List(img.Image image) {
-  Float32List floatList = Float32List(image.width * image.height * 3);
-  int index = 0;
-
-  for (int y = 0; y < image.height; y++) {
-    for (int x = 0; x < image.width; x++) {
-      // Pixel型を取得
-      var pixel = image.getPixel(x, y);
-
-      print("Pixel type: ${image.getPixel(x, y).runtimeType}");
-
-      // 赤、緑、青チャンネルの値を取得
-      // int r = pixel.r; // 赤チャンネル
-      // int g = pixel.g; // 緑チャンネル
-      // int b = pixel.b; // 青チャンネル
-
-      // 正規化
-      // floatList[index++] = r / 255.0;
-      // floatList[index++] = g / 255.0;
-      // floatList[index++] = b / 255.0;
-    }
-  }
-
-  return floatList;
-}
-
 
   @override
   Widget build(BuildContext context) {
