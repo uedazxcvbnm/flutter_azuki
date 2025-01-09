@@ -24,121 +24,137 @@ class ImagePredictionScreen extends StatefulWidget {
   _ImagePredictionScreenState createState() => _ImagePredictionScreenState();
 }
 
-class _ImagePredictionScreenState extends State<ImagePredictionScreen> {
-  late Interpreter _interpreter;
-  File? _selectedImage;
-  String _predictionResult = "";
+  class _ImagePredictionScreenState extends State<ImagePredictionScreen> {
+    late Interpreter _interpreter;
+    File? _selectedImage;
+    String _predictionResult = "";
 
-  @override
-  void initState() {
-    super.initState();
-    _loadModel();
-  }
-
-  Future<void> _loadModel() async {
-    try {
-      _interpreter = await Interpreter.fromAsset('assets/model.tflite');
-    } catch (e) {
-      print("Error loading TFLite model: $e");
+    @override
+    void initState() {
+      super.initState();
+      _loadModel();
     }
-  }
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      File file = File(pickedFile.path);
-
-      setState(() {
-        _selectedImage = file;
-      });
-
-      _printInputShape();
-
-      _runModel();
+    Future<void> _loadModel() async {
+      try {
+        _interpreter = await Interpreter.fromAsset('assets/model.tflite');
+        // 出力詳細を取得
+        var outputDetails = _interpreter.getOutputTensor(0);
+        
+        // 出力形状を取得
+        var outputShape = outputDetails.shape;
+        print('Output shape: $outputShape');
+      } catch (e) {
+        print("Error loading TFLite model: $e");
+      }
+        
     }
-  }
 
-  // Future<void> _runModel() async {
-  //   if (_selectedImage == null || _interpreter == null) {
-  //     return;
-  //   }
+    Future<void> _pickImage() async {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
-  //   // 画像をロードしてリサイズ
-  //   Uint8List input = await _selectedImage!.readAsBytes();
-  //   img.Image image = img.decodeImage(input)!;
-  //   img.Image resizedImage = img.copyResize(image, width: 224, height: 224); // モデルの入力サイズに合わせてリサイズ
+      if (pickedFile != null) {
+        File file = File(pickedFile.path);
 
-  //   // 画像を1次元Float32Listに変換
-  //   Float32List inputBuffer = _imageToFloat32List(resizedImage);
+        setState(() {
+          _selectedImage = file;
+        });
 
-  //   // 結果を格納するためのリストを用意
-  //   var outputBuffer = List.filled(_interpreter.getOutputTensor(0).shape[1], 0.0).reshape([1]);
+        _printInputShape();
 
-  //   // 推論実行
-  //   _interpreter.run(inputBuffer, outputBuffer);
+        _runModel();
+      }
+    }
 
-  //   setState(() {
-  //     _predictionResult = outputBuffer.toString();
-  //   });
-  // }
+    // Future<void> _runModel() async {
+    //   if (_selectedImage == null || _interpreter == null) {
+    //     return;
+    //   }
+
+    //   // 画像をロードしてリサイズ
+    //   Uint8List input = await _selectedImage!.readAsBytes();
+    //   img.Image image = img.decodeImage(input)!;
+    //   img.Image resizedImage = img.copyResize(image, width: 224, height: 224); // モデルの入力サイズに合わせてリサイズ
+
+    //   // 画像を1次元Float32Listに変換
+    //   Float32List inputBuffer = _imageToFloat32List(resizedImage);
+
+    //   // 結果を格納するためのリストを用意
+    //   var outputBuffer = List.filled(_interpreter.getOutputTensor(0).shape[1], 0.0).reshape([1]);
+
+    //   // 推論実行
+    //   _interpreter.run(inputBuffer, outputBuffer);
+
+    //   setState(() {
+    //     _predictionResult = outputBuffer.toString();
+    //   });
+    // }
   Future<void> _runModel() async {
-  if (_selectedImage == null || _interpreter == null) {
-    return;
-  }
-
-  Uint8List input = await _selectedImage!.readAsBytes();
-  img.Image image = img.decodeImage(input)!;
-
-  // モデルの入力サイズに画像をリサイズ
-  img.Image resizedImage = img.copyResize(image, width: 224, height: 224);
-
-  // 入力データを Float32List に変換
-  Float32List inputBuffer = _imageToFloat32List(resizedImage);
-
-  // 入力データを [1, 3, 224, 224] の形状にリシェイプ
-  var inputTensor = inputBuffer.reshape([1, 3, 224, 224]);
-
-  // 出力形状を取得して出力バッファを作成
-  var outputShape = _interpreter.getOutputTensor(0).shape;
-  var outputBuffer = List.filled(outputShape.reduce((a, b) => a * b), 0.0).reshape(outputShape);
-  // var outputBuffer = List.generate(outputShape[0], (_) => List.filled(outputSize, 0.0));
-
-  print("Running model...");
-
-  // 推論実行
-  _interpreter.run(inputTensor, outputBuffer);
-
-  // 最大値を持つインデックスを取得
-  // 出力バッファをフラットなリストに変換
-// outputBuffer[0]の型に基づいて適切に展開
-print('autoputtobaffa');
-// print(outputBuffer[0]); 
-print(outputBuffer[0].runtimeType); 
-List<double> outputScores = (outputBuffer[0] as List)  // List<dynamic>からListにキャスト
-  .map((x) {
-    if (x is Iterable) {
-      return x.expand((y) => (y is Iterable) ? y : [y]).toList();  // 2次元目も展開
-    } else {
-      return [x]; // xがIterableでない場合はリストにラップ
+    if (_selectedImage == null || _interpreter == null) {
+      return;
     }
-  })
-  .expand((x) => x is Iterable ? x : [x]) // xがIterableでない場合でもリストとして処理
-  .map((item) => item is double ? item : 0.0)  // itemをdouble型に変換
-  .toList();
+
+    Uint8List input = await _selectedImage!.readAsBytes();
+    img.Image image = img.decodeImage(input)!;
+
+    // モデルの入力サイズに画像をリサイズ
+    img.Image resizedImage = img.copyResize(image, width: 224, height: 224);
+
+    // 入力データを Float32List に変換
+    Float32List inputBuffer = _imageToFloat32List(resizedImage);
+
+    // 入力データを [1, 3, 224, 224] の形状にリシェイプ
+    var inputTensor = inputBuffer.reshape([1, 3, 224, 224]);
+
+    // 出力形状を取得して出力バッファを作成
+    var outputShape = _interpreter.getOutputTensor(0).shape;
+    var outputBuffer = List.filled(outputShape.reduce((a, b) => a * b), 0.0).reshape(outputShape);
+    // var outputBuffer = List.generate(outputShape[0], (_) => List.filled(outputSize, 0.0));
+
+    print("Running model...");
+    // print(outputBuffer);
+
+    // 推論実行
+    _interpreter.run(inputTensor, outputBuffer);
+
+    // 最大値を持つインデックスを取得
+    // 出力バッファをフラットなリストに変換
+  // outputBuffer[0]の型に基づいて適切に展開
+  print('autoputtobaffa');
+  // print(outputBuffer[0]); 
+  print(outputBuffer[0].runtimeType); 
+  List<double> outputScores = (outputBuffer[0] as List)  // List<dynamic>からListにキャスト
+    .map((x) {
+      if (x is Iterable) {
+        return x.expand((y) => (y is Iterable) ? y : [y]).toList();  // 2次元目も展開
+      } else {
+        return [x]; // xがIterableでない場合はリストにラップ
+      }
+    })
+    .expand((x) => x is Iterable ? x : [x]) // xがIterableでない場合でもリストとして処理
+    .map((item) => item is double ? item : 0.0)  // itemをdouble型に変換
+    .toList();
 
 
-// 最大値を持つインデックスを取得（クラス予測）
-int predictedIndex = outputScores.indexOf(outputScores.reduce((a, b) => a > b ? a : b));
+  print('outputscores:');
 
-setState(() {
-  _predictionResult = "Predicted Class: $predictedIndex";
-});
-
+  print(outputBuffer);
+  print(outputShape);
+  print(outputScores);
 
 
-  print("Prediction complete: Class $predictedIndex");
+
+  // 最大値を持つインデックスを取得（クラス予測）
+  int predictedIndex = outputScores.indexOf(outputScores.reduce((a, b) => a > b ? a : b));
+
+  setState(() {
+    _predictionResult = "Predicted Class: $predictedIndex";
+  });
+
+
+
+    print("Prediction complete: Class $predictedIndex");
 }
 
 
