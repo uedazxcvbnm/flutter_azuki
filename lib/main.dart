@@ -37,7 +37,8 @@ class ImagePredictionScreen extends StatefulWidget {
 
     Future<void> _loadModel() async {
       try {
-        _interpreter = await Interpreter.fromAsset('assets/model.tflite');
+        // _interpreter = await Interpreter.fromAsset('assets/model.tflite');
+        _interpreter = await Interpreter.fromAsset('assets/model_transfer.tflite');
         // 出力詳細を取得
         var outputDetails = _interpreter.getOutputTensor(0);
         
@@ -67,29 +68,7 @@ class ImagePredictionScreen extends StatefulWidget {
       }
     }
 
-    // Future<void> _runModel() async {
-    //   if (_selectedImage == null || _interpreter == null) {
-    //     return;
-    //   }
-
-    //   // 画像をロードしてリサイズ
-    //   Uint8List input = await _selectedImage!.readAsBytes();
-    //   img.Image image = img.decodeImage(input)!;
-    //   img.Image resizedImage = img.copyResize(image, width: 224, height: 224); // モデルの入力サイズに合わせてリサイズ
-
-    //   // 画像を1次元Float32Listに変換
-    //   Float32List inputBuffer = _imageToFloat32List(resizedImage);
-
-    //   // 結果を格納するためのリストを用意
-    //   var outputBuffer = List.filled(_interpreter.getOutputTensor(0).shape[1], 0.0).reshape([1]);
-
-    //   // 推論実行
-    //   _interpreter.run(inputBuffer, outputBuffer);
-
-    //   setState(() {
-    //     _predictionResult = outputBuffer.toString();
-    //   });
-    // }
+    
   Future<void> _runModel() async {
     if (_selectedImage == null || _interpreter == null) {
       return;
@@ -210,10 +189,21 @@ void _printInputShape() {
           if (_selectedImage != null)
             Image.file(_selectedImage!),
           if (_predictionResult.isNotEmpty)
-            Text(
-              "Prediction Result: $_predictionResult",
-              style: TextStyle(fontSize: 20),
-            ),
+            if(_predictionResult == 'Predicted Class: 0')
+              Text(
+                "Prediction Result: class_low",
+                style: TextStyle(fontSize: 20),
+              )
+            else if(_predictionResult == 'Predicted Class: 1')
+              Text(
+                "Prediction Result: class_middle",
+                style: TextStyle(fontSize: 20),
+              )
+            else
+              Text(
+                "Prediction Result: class_high",
+                style: TextStyle(fontSize: 20),
+              ),
           ElevatedButton(
             onPressed: _pickImage,
             child: Text('Select Image'),
