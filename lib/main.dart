@@ -10,10 +10,15 @@ void main() {
   runApp(MyApp());
 }
 
+// Flutterアプリのメインクラスを作成
 class MyApp extends StatelessWidget {
   @override
+  // buildメソッド：UIを作るための関数
+  // context はアプリのUIツリー情報
   Widget build(BuildContext context) {
+    // MaterialApp：Flutterのアプリの基本構造
     return MaterialApp(
+      // アプリ起動時に表示する画面
       home: ImagePredictionScreen(),
     );
   }
@@ -21,22 +26,31 @@ class MyApp extends StatelessWidget {
 
 class ImagePredictionScreen extends StatefulWidget {
   @override
+  // _ImagePredictionScreenState()を作成　インスタンスを返す
   _ImagePredictionScreenState createState() => _ImagePredictionScreenState();
 }
-
+  // ImagePredictionScreenを継承
   class _ImagePredictionScreenState extends State<ImagePredictionScreen> {
+    // 推論エンジン
     late Interpreter _interpreter;
+    // 選択された画像ファイル
     File? _selectedImage;
+    // 推論結果　初期値は空
     String _predictionResult = "";
 
     @override
+    // ウィジェットが作成されたとき最初に１かいだけ実行される
     void initState() {
+      // 親クラスの初期化処理
       super.initState();
+      // モデルをロード
       _loadModel();
     }
 
     Future<void> _loadModel() async {
       try {
+        // モデルをアプリに読み込む
+        // １個目がファインチューニング　２個目が転移学習
         _interpreter = await Interpreter.fromAsset('assets/model.tflite');
         // _interpreter = await Interpreter.fromAsset('assets/model_transfer.tflite');
         // 出力詳細を取得
@@ -46,6 +60,7 @@ class ImagePredictionScreen extends StatefulWidget {
         var outputShape = outputDetails.shape;
         print('Output shape: $outputShape');
       } catch (e) {
+        // 例外時
         print("Error loading TFLite model: $e");
       }
         
@@ -69,77 +84,83 @@ class ImagePredictionScreen extends StatefulWidget {
     }
 
     
-  Future<void> _runModel() async {
-    if (_selectedImage == null || _interpreter == null) {
-      return;
+    Future<void> _runModel() async {
+      // 画像が選択されていない　モデルがロードされていない
+      // そういう時は何もしない
+      if (_selectedImage == null || _interpreter == null) {
+        return;
+      }
+      // 画像をバイナリデータとして読み込む
+      // readAsBytes
+      Uint8List input = await _selectedImage!.readAsBytes();
+      // 画像データをデコード
+      img.Image image = img.decodeImage(input)!;
+
+      // モデルの入力サイズに画像をリサイズ
+      img.Image resizedImage = img.copyResize(image, width: 224, height: 224);
+
+      // 入力データを Float32List に変換
+      Float32List inputBuffer = _imageToFloat32List(resizedImage);
+
+      // 入力データを [1, 3, 224, 224] の形状にリシェイプ
+      //　バッチサイズ、チャンネル（RGB）、画像サイズ＊画像サイズ
+      // _printInputShape()での表示結果をもとに配列の変更
+      var inputTensor = inputBuffer.reshape([1, 3, 224, 224]);
+
+      // 出力形状を取得して出力バッファを作成
+      // 出力形状を取得
+      var outputShape = _interpreter.getOutputTensor(0).shape;
+      // 
+      var outputBuffer = List.filled(outputShape.reduce((a, b) => a * b), 0.0).reshape(outputShape);
+      // var outputBuffer = List.generate(outputShape[0], (_) => List.filled(outputSize, 0.0));
+
+      print("Running model...");
+      // print(outputBuffer);
+
+      // 推論実行
+      // (入力する変数、結果を格納する変数)
+      _interpreter.run(inputTensor, outputBuffer);
+
+      print('autoputtobaffa');
+      // outputbufferのデータ型を確認
+      print(outputBuffer[0].runtimeType); 
+
+
+      // 最大値を持つインデックスを取得
+      // 出力バッファをフラットなリストに変換
+      // outputBuffer[0]の型に基づいて適切に展開
+      List<double> outputScores = (outputBuffer[0] as List)  // List<dynamic>からListにキャスト
+        .map((x) {
+          if (x is Iterable) {
+            return x.expand((y) => (y is Iterable) ? y : [y]).toList();  // 2次元目も展開
+          } else {
+            return [x]; // xがIterableでない場合はリストにラップ
+          }
+        })
+        .expand((x) => x is Iterable ? x : [x]) // xがIterableでない場合でもリストとして処理
+        .map((item) => item is double ? item : 0.0)  // itemをdouble型に変換
+        .toList();
+
+
+      print('outputscores:');
+
+      print(outputBuffer);
+      print(outputShape);
+      print(outputScores);
+
+
+
+      // 最大値を持つインデックスを取得（クラス予測）
+      int predictedIndex = outputScores.indexOf(outputScores.reduce((a, b) => a > b ? a : b));
+
+      setState(() {
+        _predictionResult = "Predicted Class: $predictedIndex";
+      });
+
+
+
+      print("Prediction complete: Class $predictedIndex");
     }
-
-    Uint8List input = await _selectedImage!.readAsBytes();
-    img.Image image = img.decodeImage(input)!;
-
-    // モデルの入力サイズに画像をリサイズ
-    img.Image resizedImage = img.copyResize(image, width: 224, height: 224);
-
-    // 入力データを Float32List に変換
-    Float32List inputBuffer = _imageToFloat32List(resizedImage);
-
-    // 入力データを [1, 3, 224, 224] の形状にリシェイプ
-    // _printInputShape()での表示結果をもとに配列の変更
-    var inputTensor = inputBuffer.reshape([1, 3, 224, 224]);
-
-    // 出力形状を取得して出力バッファを作成
-    var outputShape = _interpreter.getOutputTensor(0).shape;
-    // 
-    var outputBuffer = List.filled(outputShape.reduce((a, b) => a * b), 0.0).reshape(outputShape);
-    // var outputBuffer = List.generate(outputShape[0], (_) => List.filled(outputSize, 0.0));
-
-    print("Running model...");
-    // print(outputBuffer);
-
-    // 推論実行
-    _interpreter.run(inputTensor, outputBuffer);
-
-    // 最大値を持つインデックスを取得
-    // 出力バッファをフラットなリストに変換
-    // outputBuffer[0]の型に基づいて適切に展開
-    print('autoputtobaffa');
-    // print(outputBuffer[0]); 
-    print(outputBuffer[0].runtimeType); 
-
-
-    // 
-    List<double> outputScores = (outputBuffer[0] as List)  // List<dynamic>からListにキャスト
-      .map((x) {
-        if (x is Iterable) {
-          return x.expand((y) => (y is Iterable) ? y : [y]).toList();  // 2次元目も展開
-        } else {
-          return [x]; // xがIterableでない場合はリストにラップ
-        }
-      })
-      .expand((x) => x is Iterable ? x : [x]) // xがIterableでない場合でもリストとして処理
-      .map((item) => item is double ? item : 0.0)  // itemをdouble型に変換
-      .toList();
-
-
-    print('outputscores:');
-
-    print(outputBuffer);
-    print(outputShape);
-    print(outputScores);
-
-
-
-    // 最大値を持つインデックスを取得（クラス予測）
-    int predictedIndex = outputScores.indexOf(outputScores.reduce((a, b) => a > b ? a : b));
-
-    setState(() {
-      _predictionResult = "Predicted Class: $predictedIndex";
-    });
-
-
-
-    print("Prediction complete: Class $predictedIndex");
-  }
 
 
 
