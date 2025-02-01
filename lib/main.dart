@@ -66,13 +66,22 @@ class ImagePredictionScreen extends StatefulWidget {
         
     }
 
+    // 画像を選択する
     Future<void> _pickImage() async {
       final picker = ImagePicker();
+      // ユーザーにギャラリーから画像を選択させる
+      // await 画像が選ばれるまで待つ
       final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
       if (pickedFile != null) {
+        // 選択した画像のファイルパスを取得し、File型に型変換
         File file = File(pickedFile.path);
 
+        // 画面を更新
+        // _selectedImageに画像ファイルを渡す
+        // if (_selectedImage != null)
+        //     Image.file(_selectedImage!),
+        // で画面に画像を表示
         setState(() {
           _selectedImage = file;
         });
@@ -126,9 +135,15 @@ class ImagePredictionScreen extends StatefulWidget {
       print(outputBuffer[0].runtimeType); 
 
 
-      // 最大値を持つインデックスを取得
-      // 出力バッファをフラットなリストに変換
-      // outputBuffer[0]の型に基づいて適切に展開
+      // 推論結果を１次元のリストに変換
+      // List<double>
+      // ２次元リスト対応と、３次元リスト対応がある
+
+      // outputBuffer[0] 出力結果
+      // x が Iterable なら、expand() を使ってリストの中のリストを展開
+      // ３次元以上の場合も１次元にする
+
+      // itemがdouble以外なら0.0にする　"abc"→0.0
       List<double> outputScores = (outputBuffer[0] as List)  // List<dynamic>からListにキャスト
         .map((x) {
           if (x is Iterable) {
@@ -153,6 +168,7 @@ class ImagePredictionScreen extends StatefulWidget {
       // 最大値を持つインデックスを取得（クラス予測）
       int predictedIndex = outputScores.indexOf(outputScores.reduce((a, b) => a > b ? a : b));
 
+      // 判定結果によって、画面の表示内容を変える
       setState(() {
         _predictionResult = "Predicted Class: $predictedIndex";
       });
@@ -164,26 +180,29 @@ class ImagePredictionScreen extends StatefulWidget {
 
 
 
-
+// 入力されるデータの形状を取得する
 void _printInputShape() {
   var inputShape = _interpreter.getInputTensor(0).shape;
   print("Model expects input shape: $inputShape");
 }
 
   
-
+  // 画像float32に変換する
   Float32List _imageToFloat32List(img.Image image) {
+      // 幅　高さ
       int width = image.width;
       int height = image.height;
 
-
+      // RGBチャンネル分のピクセルデータ
       Float32List floatList = Float32List(3 * width * height);
+      // 赤・緑・青チャンネルを別々に管理
       int indexR = 0;
       int indexG = width * height;
       int indexB = 2 * width * height;
 
       print("Before getting pixel type");
 
+      // 画像のすべてのピクセル（width height）
       for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
           // int pixel = って事前に指定しても、どうしても変数pixelは型がピクセル型に自動的になってしまう
@@ -207,11 +226,13 @@ void _printInputShape() {
           floatList[indexB++] = b / 255.0;
         }
       }
+  // Float32Listを返す
   return floatList;
 }
 
 
   @override
+  // スマホ画面
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -222,6 +243,7 @@ void _printInputShape() {
           if (_selectedImage != null)
             Image.file(_selectedImage!),
           if (_predictionResult.isNotEmpty)
+            // 分類結果を表示する部分
             if(_predictionResult == 'Predicted Class: 0')
               Text(
                 "Prediction Result: class_low",
@@ -237,6 +259,7 @@ void _printInputShape() {
                 "Prediction Result: class_high",
                 style: TextStyle(fontSize: 20),
               ),
+          // 画像を選択するボタン
           ElevatedButton(
             onPressed: _pickImage,
             child: Text('Select Image'),
