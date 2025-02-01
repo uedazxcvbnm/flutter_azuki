@@ -18,6 +18,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // MaterialApp：Flutterのアプリの基本構造
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       // アプリ起動時に表示する画面
       home: ImagePredictionScreen(),
     );
@@ -247,7 +248,7 @@ void _printInputShape() {
               _selectedImage!)
           else
             Padding(
-              padding: EdgeInsets.only(top: 200, bottom: 50),
+              padding: EdgeInsets.only(top: 200, bottom: 100),
               child: SizedBox(
                 child: Center(child: Text('画像をアップロードしてください')),
               ),
@@ -255,7 +256,7 @@ void _printInputShape() {
             // 分類結果を表示する部分
             if(_predictionResult == 'Predicted Class: 0')
               Padding(
-                padding: EdgeInsets.only(top: -20), // 上に20ピクセルの余白を追加
+                padding: EdgeInsets.only(top: 0), // 上に20ピクセルの余白を追加
                 child: Text(
                   "Prediction Result: class_low",
                   style: TextStyle(fontSize: 20),
@@ -263,7 +264,7 @@ void _printInputShape() {
               )
             else if(_predictionResult == 'Predicted Class: 1')
               Padding(
-                padding: EdgeInsets.only(top: -20), // 上に20ピクセルの余白を追加
+                padding: EdgeInsets.only(top: 0), // 上に20ピクセルの余白を追加
                 child: Text(
                   "Prediction Result: class_middle",
                   style: TextStyle(fontSize: 20),
@@ -271,7 +272,7 @@ void _printInputShape() {
               )
             else
               Padding(
-                padding: EdgeInsets.only(top: -20), // 上に20ピクセルの余白を追加
+                padding: EdgeInsets.only(top: 0), // 上に20ピクセルの余白を追加
                 child: Text(
                   "Prediction Result: class_high",
                   style: TextStyle(fontSize: 20),
