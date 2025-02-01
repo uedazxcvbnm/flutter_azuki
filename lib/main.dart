@@ -236,33 +236,52 @@ void _printInputShape() {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Image Prediction'),
+        title: Text('小豆の画像分類',
+        style: TextStyle(color: Colors.white),),
+        backgroundColor: Color.fromARGB(255, 130, 40, 91),
       ),
       body: Column(
         children: [
           if (_selectedImage != null)
-            Image.file(_selectedImage!),
-          if (_predictionResult.isNotEmpty)
+            Image.file(
+              _selectedImage!)
+          else
+            Padding(
+              padding: EdgeInsets.only(top: 200, bottom: 50),
+              child: SizedBox(
+                child: Center(child: Text('画像をアップロードしてください')),
+              ),
+            ),
             // 分類結果を表示する部分
             if(_predictionResult == 'Predicted Class: 0')
-              Text(
-                "Prediction Result: class_low",
-                style: TextStyle(fontSize: 20),
+              Padding(
+                padding: EdgeInsets.only(top: -20), // 上に20ピクセルの余白を追加
+                child: Text(
+                  "Prediction Result: class_low",
+                  style: TextStyle(fontSize: 20),
+                ),
               )
             else if(_predictionResult == 'Predicted Class: 1')
-              Text(
-                "Prediction Result: class_middle",
-                style: TextStyle(fontSize: 20),
+              Padding(
+                padding: EdgeInsets.only(top: -20), // 上に20ピクセルの余白を追加
+                child: Text(
+                  "Prediction Result: class_middle",
+                  style: TextStyle(fontSize: 20),
+                ),
               )
             else
-              Text(
-                "Prediction Result: class_high",
-                style: TextStyle(fontSize: 20),
+              Padding(
+                padding: EdgeInsets.only(top: -20), // 上に20ピクセルの余白を追加
+                child: Text(
+                  "Prediction Result: class_high",
+                  style: TextStyle(fontSize: 20),
+                ),
               ),
           // 画像を選択するボタン
           ElevatedButton(
             onPressed: _pickImage,
-            child: Text('Select Image'),
+            child: Text('画像を選択',
+            style: TextStyle(color:Color.fromARGB(255, 130, 40, 91))),
           ),
         ],
       ),
