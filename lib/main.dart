@@ -258,7 +258,7 @@ void _printInputShape() {
               Padding(
                 padding: EdgeInsets.only(top: 0), // 上に20ピクセルの余白を追加
                 child: Text(
-                  "分類結果: 欠陥あり",
+                  "分類結果: 安い",
                   style: TextStyle(fontSize: 20),
                 ),
               )
@@ -274,7 +274,7 @@ void _printInputShape() {
               Padding(
                 padding: EdgeInsets.only(top: 0), // 上に20ピクセルの余白を追加
                 child: Text(
-                  "分類結果: 優良",
+                  "分類結果: 高値",
                   style: TextStyle(fontSize: 20),
                 ),
               ),
