@@ -258,7 +258,7 @@ void _printInputShape() {
               Padding(
                 padding: EdgeInsets.only(top: 0), // 上に20ピクセルの余白を追加
                 child: Text(
-                  "Prediction Result: class_low",
+                  "分類結果: 欠陥あり",
                   style: TextStyle(fontSize: 20),
                 ),
               )
@@ -266,7 +266,7 @@ void _printInputShape() {
               Padding(
                 padding: EdgeInsets.only(top: 0), // 上に20ピクセルの余白を追加
                 child: Text(
-                  "Prediction Result: class_middle",
+                  "分類結果: 普通",
                   style: TextStyle(fontSize: 20),
                 ),
               )
@@ -274,7 +274,7 @@ void _printInputShape() {
               Padding(
                 padding: EdgeInsets.only(top: 0), // 上に20ピクセルの余白を追加
                 child: Text(
-                  "Prediction Result: class_high",
+                  "分類結果: 優良",
                   style: TextStyle(fontSize: 20),
                 ),
               ),
